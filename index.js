@@ -29,7 +29,15 @@ async function run() {
     const assignmentCollection = client.db('groupStudyDB').collection('assignment')
 
     // receive assignment data server from client
-    app.post("/assignments", async(req, res) =>{
+    // read
+    app.get("/assignment", async(req, res) =>{
+        const cursor = assignmentCollection.find();
+        const result = await cursor.toArray();
+        res.send(result);
+    })
+
+    // create data
+    app.post("/assignment", async(req, res) =>{
         const newAssignment = req.body;
         console.log(newAssignment);
         const result = await assignmentCollection.insertOne(newAssignment);
