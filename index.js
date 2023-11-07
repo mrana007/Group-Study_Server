@@ -26,6 +26,7 @@ async function run() {
     await client.connect();
 
     const assignmentCollection = client.db("groupStudyDB").collection("assignment");
+    const submittedAssignmentsCollection = client.db("groupStudyDB").collection('submittedAssignments');
 
     // receive assignment data to server from client
     // read data
@@ -35,7 +36,6 @@ async function run() {
       res.send(result);
     });
 
-    
     // create data
     app.post("/assignment", async (req, res) => {
         const newAssignment = req.body;
@@ -63,14 +63,21 @@ async function run() {
                 marks:updatedAssignment.marks,
                 image:updatedAssignment.image,
                 category:updatedAssignment.category,
-                user:updatedAssignment.user,
+                creator:updatedAssignment.creator,
                 date:updatedAssignment.date,
                 description:updatedAssignment.description
             }
         }
         const result = await assignmentCollection.updateOne(filter, assignment, options);
         res.send(result);
-    })
+    });
+
+     // submittedAssignments Collection add
+     app.post('/submittedAssignments', async (req, res) => {
+      const submittedAssignments = req.body;
+      const result = await submittedAssignmentsCollection.insertOne(submittedAssignments)
+      res.send(result)
+    });
 
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
