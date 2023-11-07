@@ -72,7 +72,16 @@ async function run() {
         res.send(result);
     });
 
-     // submittedAssignments Collection add
+     // submittedAssignments Collection add and get
+
+    //  get
+    app.get("/submittedAssignments", async (req, res) => {
+      const cursor = submittedAssignmentsCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    //  add
      app.post('/submittedAssignments', async (req, res) => {
       const submittedAssignments = req.body;
       const result = await submittedAssignmentsCollection.insertOne(submittedAssignments)
