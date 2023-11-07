@@ -27,6 +27,7 @@ async function run() {
 
     const assignmentCollection = client.db("groupStudyDB").collection("assignment");
     const submittedAssignmentsCollection = client.db("groupStudyDB").collection('submittedAssignments');
+    const giveMarkCollection = client.db("groupStudyDB").collection('giveMarks');
 
     // receive assignment data to server from client
     // read data
@@ -73,7 +74,6 @@ async function run() {
     });
 
      // submittedAssignments Collection add and get
-
     //  get
     app.get("/submittedAssignments", async (req, res) => {
       const cursor = submittedAssignmentsCollection.find();
@@ -85,6 +85,21 @@ async function run() {
      app.post('/submittedAssignments', async (req, res) => {
       const submittedAssignments = req.body;
       const result = await submittedAssignmentsCollection.insertOne(submittedAssignments)
+      res.send(result)
+    });
+
+    // Give marks
+    // get give marks
+    app.get("/giveMarks", async (req, res) => {
+      const cursor = giveMarkCollection.find();
+      const result = await cursor.toArray();
+      res.send(result);
+    });
+
+    // add give marks
+    app.post('/giveMarks', async (req, res) => {
+      const giveMarks = req.body;
+      const result = await giveMarkCollection.insertOne(giveMarks)
       res.send(result)
     });
 
