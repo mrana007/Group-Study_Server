@@ -90,11 +90,26 @@ async function run() {
 
     // Give marks
     // get give marks
-    app.get("/giveMarks", async (req, res) => {
-      const cursor = giveMarkCollection.find();
-      const result = await cursor.toArray();
+    app.get('/submittedAssignments/:id', async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: new ObjectId(id) }
+      const result = await submittedAssignmentsCollection.findOne(query);
       res.send(result);
-    });
+  });
+  // update status pending to confirm
+  app.put('/submittedAssignments/:id', async (req, res) => {
+    const id = req.params.id;
+    const data = req.body; // You should get the count from the request body
+    const options = { upsert: true };
+    const filter = { _id: new ObjectId(id) };
+    const update = {
+        $set: {
+            status: data.status // Update the applied count with the provided value
+        }
+    };
+    const result = await submittedAssignmentsCollection.updateOne(filter, update, options);
+    res.send(result);
+});
 
     // add give marks
     app.post('/giveMarks', async (req, res) => {
