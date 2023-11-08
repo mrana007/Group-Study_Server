@@ -1,13 +1,22 @@
 const express = require("express");
 const cors = require("cors");
+const jwt = require('jsonwebtoken');
+const cookieParser =require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 require("dotenv").config();
 const app = express();
 const port = process.env.PORT || 5000;
 
 // middleware
-app.use(cors());
+app.use(cors({
+  origin: [
+    "https://a11-group-study.web.app",
+    "https://a11-group-study.firebaseapp.com"
+  ],
+  credentials: true
+}));
 app.use(express.json());
+app.use(cookieParser());
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.4kezvwg.mongodb.net/?retryWrites=true&w=majority`;
 
@@ -20,18 +29,51 @@ const client = new MongoClient(uri, {
   },
 });
 
+// middlewares for jwt
+const logger =async(req, res, next)=>{
+  console.log('log info:', req.method, req.url)
+  next();
+};
+const verifyToken =async(req, res, next)=>{
+  const token = req.cookies?.token;
+  console.log('value of token in middleware', token);
+  if(!token){
+    return res.status(401).send({message: " not authorized"})
+  }
+  next();
+};
+
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    await client.connect();
+    // await client.connect();
 
     const assignmentCollection = client.db("groupStudyDB").collection("assignment");
     const submittedAssignmentsCollection = client.db("groupStudyDB").collection('submittedAssignments');
     const giveMarkCollection = client.db("groupStudyDB").collection('giveMarks');
 
-    // receive assignment data to server from client
+    // auth related api
+    app.post('/jwt', logger, async(req, res) =>{
+      const user = req.body;
+      console.log(user);
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
+      res
+      .cookie('token', token, {
+        httpOnly: true,
+        secure: true,
+        sameSite: 'none'
+      })
+      .send({success: true});
+    });
+
+    app.post('/logout', async(req, res)=>{
+      const user = req.body;
+      console.log('logging out', user);
+      res.clearCookie('token', {maxAge: 0}).send({success: true})
+    });
+
     // read data
-    app.get("/assignment", async (req, res) => {
+    app.get("/assignment", logger, async (req, res) => {
       const cursor = assignmentCollection.find();
       const result = await cursor.toArray();
       res.send(result);
@@ -75,7 +117,7 @@ async function run() {
 
      // submittedAssignments Collection add and get
     //  get
-    app.get("/submittedAssignments", async (req, res) => {
+    app.get("/submittedAssignments", logger, async (req, res) => {
       const cursor = submittedAssignmentsCollection.find();
       const result = await cursor.toArray();
       res.send(result);
@@ -87,7 +129,16 @@ async function run() {
       const result = await submittedAssignmentsCollection.insertOne(submittedAssignments)
       res.send(result)
     });
-
+        // get my assignments
+        app.get('/giveMarks',  async (req, res) => {
+          let query = {};
+          console.log("query", req.query);
+          if (req.query?.creator) {
+              query = { creator: req.query?.creator }
+          }
+          const result = await giveMarkCollection.find(query).toArray();
+          res.send(result);
+      })
     // Give marks
     // get give marks
     app.get('/submittedAssignments/:id', async (req, res) => {
@@ -108,6 +159,14 @@ async function run() {
         }
     };
     const result = await submittedAssignmentsCollection.updateOne(filter, update, options);
+    res.send(result);
+});
+
+  // delete
+  app.delete('/giveMarks/:id', async (req, res) => {
+    const id = req.params.id;
+    const query = { _id: new ObjectId(id) }
+    const result = await giveMarkCollection.deleteOne(query);
     res.send(result);
 });
 
