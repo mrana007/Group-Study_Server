@@ -12,6 +12,7 @@ app.use(cors({
   origin: [
     "https://a11-group-study.web.app",
     "https://a11-group-study.firebaseapp.com"
+    
   ],
   credentials: true
 }));
@@ -117,7 +118,7 @@ async function run() {
 
      // submittedAssignments Collection add and get
     //  get
-    app.get("/submittedAssignments", logger, async (req, res) => {
+    app.get("/submittedAssignments", async (req, res) => {
       const cursor = submittedAssignmentsCollection.find();
       const result = await cursor.toArray();
       res.send(result);
@@ -129,7 +130,7 @@ async function run() {
       const result = await submittedAssignmentsCollection.insertOne(submittedAssignments)
       res.send(result)
     });
-        // get my assignments
+        // get all complete assignments
         app.get('/giveMarks',  async (req, res) => {
           let query = {};
           console.log("query", req.query);
@@ -162,12 +163,21 @@ async function run() {
     res.send(result);
 });
 
+// get my assignments
+
+app.get('/submittedAssignments/:creator', async (req, res) => {
+  const id = req.params.creator;
+  const query = { creator: new ObjectId(creator) }
+  const result = await submittedAssignmentsCollection.find(query).toArray();
+  res.send(result);
+});
+
   // delete
-  app.delete('/giveMarks/:id', async (req, res) => {
-    const id = req.params.id;
-    const query = { _id: new ObjectId(id) }
-    const result = await giveMarkCollection.deleteOne(query);
-    res.send(result);
+app.delete('/assignment/:id', async (req, res) => {
+  const id = req.params.id;
+  const query = { _id: new ObjectId(id) }
+  const result = await assignmentCollection.deleteOne(query);
+  res.send(result);
 });
 
     // add give marks
